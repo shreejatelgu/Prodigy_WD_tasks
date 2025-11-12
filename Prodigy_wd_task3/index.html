@@ -1,0 +1,252 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Tic-Tac-Toe — HTML/CSS/JS</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <h1>Tic-Tac-Toe</h1>
+      <div class="controls">
+        <div class="modes">
+          <button class="btn" id="mode-2p">Two Player</button>
+          <button class="btn" id="mode-ai-easy">VS AI (Easy)</button>
+          <button class="btn primary" id="mode-ai-hard">VS AI (Hard)</button>
+        </div>
+        <div style="margin-left:auto;display:flex;align-items:center;gap:8px">
+          <div class="small">Turn:</div>
+          <div id="turnLabel" class="info">—</div>
+          <div class="score small" id="scoreBoard">
+            <div>X: <span id="scoreX">0</span></div>
+            <div>O: <span id="scoreO">0</span></div>
+            <div>Draws: <span id="scoreD">0</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="board" id="board"></div>
+
+      <div class="footer">
+        <div class="hint" id="message">Choose a mode to start — click a mode or press R to restart.</div>
+        <div style="display:flex;gap:8px">
+          <button class="btn" id="undoBtn">Undo</button>
+          <button class="btn primary" id="restartBtn">Restart</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+  // ======= Game logic =======
+  const WIN_COMBOS = [
+    [0,1,2],[3,4,5],[6,7,8],
+    [0,3,6],[1,4,7],[2,5,8],
+    [0,4,8],[2,4,6]
+  ];
+
+  const boardEl = document.getElementById('board');
+  const turnLabel = document.getElementById('turnLabel');
+  const message = document.getElementById('message');
+  const scoreX = document.getElementById('scoreX');
+  const scoreO = document.getElementById('scoreO');
+  const scoreD = document.getElementById('scoreD');
+  const restartBtn = document.getElementById('restartBtn');
+  const undoBtn = document.getElementById('undoBtn');
+
+  let cells = Array(9).fill(null);
+  let current = 'X';
+  let running = false;
+  let mode = 'ai-hard';
+  let history = [];
+  let scores = {X:0,O:0,D:0};
+
+  function buildBoard(){
+    boardEl.innerHTML = '';
+    for(let i=0;i<9;i++){
+      const el = document.createElement('div');
+      el.className = 'cell';
+      el.dataset.idx = i;
+      el.addEventListener('click', onClickCell);
+      boardEl.appendChild(el);
+    }
+  }
+
+  function onClickCell(e){
+    const idx = Number(e.currentTarget.dataset.idx);
+    if(!running || cells[idx]) return;
+    makeMove(idx, current);
+
+    const winner = checkWin(cells);
+    if(winner || isBoardFull(cells)){
+      endRound(winner);
+    } else {
+      swapTurn();
+      if(shouldAIMove()) scheduleAIMove();
+    }
+  }
+
+  function makeMove(idx, player){
+    cells[idx] = player;
+    history.push({idx,player});
+    render();
+  }
+
+  function undo(){
+    if(history.length===0 || !running) return;
+    const last = history.pop();
+    cells[last.idx] = null;
+    if(mode !== '2p' && last.player !== humanPlayer()){
+      if(history.length){
+        const prev = history.pop();
+        cells[prev.idx] = null;
+      }
+    }
+    current = humanPlayer();
+    render();
+  }
+
+  undoBtn.addEventListener('click', ()=>undo());
+
+  function isBoardFull(b){ return b.every(v=>v!=null); }
+
+  function checkWin(b){
+    for(const combo of WIN_COMBOS){
+      const [a,b1,c] = combo;
+      if(b[a] && b[a]===b[b1] && b[a]===b[c]) return {winner:b[a], combo}
+    }
+    return null;
+  }
+
+  function endRound(result){
+    running = false;
+    if(result && result.winner){
+      highlightCombo(result.combo);
+      message.textContent = `Player ${result.winner} wins!`;
+      scores[result.winner]++;
+      updateScores();
+    } else {
+      message.textContent = `It's a draw.`;
+      scores.D++;
+      updateScores();
+    }
+  }
+
+  function highlightCombo(combo){
+    combo.forEach(i=>{
+      const el = boardEl.querySelector(`[data-idx='${i}']`);
+      el.classList.add('win');
+    });
+  }
+
+  function swapTurn(){ current = current==='X'?'O':'X'; updateTurnLabel(); }
+  function updateTurnLabel(){ turnLabel.textContent = running ? current : '—'; }
+
+  function render(){
+    for(let i=0;i<9;i++){
+      const el = boardEl.querySelector(`[data-idx='${i}']`);
+      el.classList.remove('x','o','win');
+      el.textContent = '';
+      if(cells[i]){
+        el.textContent = cells[i];
+        el.classList.add(cells[i].toLowerCase());
+      }
+    }
+  }
+
+  function updateScores(){ scoreX.textContent = scores.X; scoreO.textContent = scores.O; scoreD.textContent = scores.D; }
+
+  document.getElementById('mode-2p').addEventListener('click', ()=>startMode('2p'));
+  document.getElementById('mode-ai-easy').addEventListener('click', ()=>startMode('ai-easy'));
+  document.getElementById('mode-ai-hard').addEventListener('click', ()=>startMode('ai-hard'));
+  restartBtn.addEventListener('click', ()=>startMode(mode));
+
+  function startMode(m){
+    mode = m;
+    cells = Array(9).fill(null);
+    history = [];
+    running = true;
+    current = 'X';
+    message.textContent = (mode==='2p')? 'Two player mode — X starts.' : (mode==='ai-easy')? 'Play vs AI (Easy). You are X.' : 'Play vs AI (Hard). You are X.';
+    updateTurnLabel();
+    render();
+  }
+
+  function humanPlayer(){ return 'X'; }
+  function aiPlayer(){ return 'O'; }
+  function shouldAIMove(){ return running && mode!=='2p' && current===aiPlayer(); }
+
+  function scheduleAIMove(){
+    setTimeout(()=>{
+      if(mode==='ai-easy') aiMoveEasy();
+      else aiMoveHard();
+      const winner = checkWin(cells);
+      if(winner || isBoardFull(cells)) endRound(winner);
+      else swapTurn();
+    }, 350);
+  }
+
+  function aiMoveEasy(){
+    const idx = findWinningMove(aiPlayer()) ?? findWinningMove(humanPlayer()) ?? randomEmpty();
+    if(idx!=null) makeMove(idx, aiPlayer());
+  }
+
+  function aiMoveHard(){
+    const best = minimax(cells.slice(), aiPlayer()).index;
+    if(best!=null) makeMove(best, aiPlayer());
+  }
+
+  function findWinningMove(player){
+    for(let i=0;i<9;i++){
+      if(!cells[i]){
+        cells[i]=player;
+        const win = checkWin(cells);
+        cells[i]=null;
+        if(win && win.winner===player) return i;
+      }
+    }
+    return null;
+  }
+
+  function randomEmpty(){
+    const empties = cells.map((v,i)=>v?null:i).filter(v=>v!=null);
+    return empties[Math.floor(Math.random()*empties.length)];
+  }
+
+  function minimax(boardState, player){
+    const avail = boardState.map((v,i)=>v?null:i).filter(v=>v!=null);
+    const win = checkWin(boardState);
+    if(win && win.winner===aiPlayer()) return {score:10};
+    if(win && win.winner===humanPlayer()) return {score:-10};
+    if(avail.length===0) return {score:0};
+
+    const moves = [];
+    for(const idx of avail){
+      const move = {};
+      move.index = idx;
+      boardState[idx] = player;
+      move.score = (player===aiPlayer())
+        ? minimax(boardState, humanPlayer()).score
+        : minimax(boardState, aiPlayer()).score;
+      boardState[idx] = null;
+      moves.push(move);
+    }
+
+    return (player===aiPlayer())
+      ? moves.reduce((a,b)=>a.score>b.score?a:b)
+      : moves.reduce((a,b)=>a.score<b.score?a:b);
+  }
+
+  window.addEventListener('keydown',(e)=>{
+    if(e.key.toLowerCase()==='r') startMode(mode);
+    if(e.key.toLowerCase()==='u') undo();
+  });
+
+  buildBoard();
+  updateScores();
+  startMode('ai-hard');
+  </script>
+</body>
+</html>

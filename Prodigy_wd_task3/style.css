@@ -1,0 +1,72 @@
+:root{
+  --bg:#0f172a; --card:#0b1220; --accent:#7c3aed; --muted:#94a3b8;
+  --win:#16a34a; --size:min(64px,12vmin);
+  color-scheme: dark;
+}
+
+html,body{
+  height:100%;margin:0;
+  font-family:Inter, system-ui, -apple-system, "Segoe UI", Roboto;
+  color:#e6eef8;
+  background:linear-gradient(180deg,#071025 0%, #07142a 100%);
+}
+
+.wrap{min-height:100%;display:flex;align-items:center;justify-content:center;padding:28px}
+.card{
+  background:rgba(255,255,255,0.03);
+  border-radius:14px;
+  padding:20px;
+  box-shadow:0 8px 30px rgba(2,6,23,0.6);
+  width:100%;
+  max-width:740px;
+}
+
+h1{margin:0 0 8px;font-size:22px;text-align:center;}
+.controls{display:flex;gap:12px;align-items:center;margin-bottom:14px;flex-wrap:wrap}
+.btn{background:transparent;border:1px solid rgba(255,255,255,0.06);
+  padding:8px 12px;border-radius:8px;color:var(--muted);cursor:pointer}
+.btn.primary{background:linear-gradient(90deg,var(--accent),#a78bfa);color:white;border:none}
+
+.modes{display:flex;gap:8px}
+.board{
+  display:grid;
+  grid-template-columns:repeat(3,var(--size));
+  grid-template-rows:repeat(3,var(--size));
+  gap:10px;
+  justify-content:center;
+  margin:18px auto;
+}
+.cell{
+  width:var(--size);
+  height:var(--size);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:rgba(255,255,255,0.05);
+  border-radius:12px;
+  font-size:calc(var(--size)/2);
+  cursor:pointer;
+  user-select:none;
+  transition:all .2s ease;
+}
+.cell:active{transform:scale(.97);}
+.cell.x{color:#f97316;font-weight:700;}
+.cell.o{color:#34d399;font-weight:700;}
+
+.cell.win{
+  background:radial-gradient(circle,rgba(34,197,94,0.3) 0%,rgba(34,197,94,0.05) 80%);
+  box-shadow:0 0 25px rgba(34,197,94,0.4),0 0 50px rgba(34,197,94,0.2);
+  animation:glowPulse 1s ease-in-out infinite alternate;
+}
+@keyframes glowPulse{
+  from{box-shadow:0 0 20px rgba(34,197,94,0.2);}
+  to{box-shadow:0 0 50px rgba(34,197,94,0.5);}
+}
+
+.status{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.info{color:var(--muted)}
+.score{display:flex;gap:10px;margin-left:6px}
+.small{font-size:13px;color:var(--muted)}
+.footer{display:flex;justify-content:space-between;align-items:center;margin-top:12px}
+.hint{font-size:13px;color:var(--muted)}
+@media (max-width:480px){:root{--size:calc(min(64px,22vmin));}.card{padding:14px}}
